@@ -1,0 +1,68 @@
+---
+title: "Zadanie 2"
+author: "Wiktor Borowik & Michal Rasinski"
+date: "18 11 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+library(ggplot2)
+library(plyr)
+
+```
+
+
+```{r diamonds}
+data(diamonds)
+summary(diamonds)
+```
+
+## Histogramy
+
+Histogram (z ustawiona szerokoscia slupka oraz zakresem osi x) zmiennej 'Depth':
+
+```{r depth}
+ggplot(data=diamonds) + geom_histogram(binwidth=0.2, aes(x=depth)) + ggtitle("Diamond Depth Distribution") + xlab("Diamond Depth") + ylab("Occurrences") + theme_minimal() + xlim(55,70)
+```
+
+## Jak zmienna cut wplywa na histogram?
+
+1. za pomoca koloru:
+```{r cut_color}
+ggplot(data=diamonds, aes(x=depth, color=cut)) + geom_histogram(binwidth=0.2, fill="white", position="dodge") + ggtitle("Diamond Depth Distribution by Cut") + xlab("Diamond Depth") + ylab("Occurrences") + theme_minimal() + xlim(55,70) + scale_color_brewer(palette="Dark2")
+
+```
+
+2. za pomoca paneli:
+```{r cut_panels}
+ggplot(data=diamonds) + geom_histogram(binwidth=0.2, aes(x=depth)) + ggtitle("Diamond Depth Distribution by Cut") + xlab("Diamond Depth") + ylab("Occurrences") + theme_minimal() + xlim(55,70) + facet_wrap(~cut, scales="free_y")
+```
+
+Histogram zmiennej 'Price':
+
+```{r price}
+ggplot(data=diamonds) + geom_histogram(binwidth=10, aes(x=price)) + ggtitle("Diamond Price Distribution") + xlab("Diamond Price U$ - Binwidth 50") + ylab("Occurrences") + theme_minimal() + xlim(400,2500)
+```
+
+## Jak zmienna cut wplywa na histogram?
+
+1. za pomoca koloru:
+```{r color_cut_price}
+ggplot(data=diamonds, aes(x=price, color=cut)) + geom_histogram(binwidth=10, fill="white", position="dodge") + ggtitle("Diamond Price Distribution by Cut (color)") + xlab("Diamond Depth") + ylab("Occurrences") + theme_minimal() + xlim(400,2500) + scale_color_brewer(palette="Dark2")
+```
+
+2. za pomoca paneli
+``` {r panele_cut_price}
+ggplot(data=diamonds) + geom_histogram(binwidth=10, aes(x=price)) + ggtitle("Diamond Price Distribution by Cut (panels)") + xlab("Diamond Depth") + ylab("Occurrences") + theme_minimal() + xlim(400,2500) + facet_wrap(~cut, scales="free_y")
+```
+
+# Relacja midzy zmiennymi: carat i price:
+
+``` {r relation}
+ggplot(diamonds, aes(carat, price)) + geom_point()
+```
+
+## Wnioski:
+
+Pokazywanie zaloznosci zmiennych na histogramach, podczas gdy ta zmienna nie jest binarna, jest wygodniejsza pod postacia paneli. Przy wielu klasach danej zmiennej histogramy podzielone za pomoca koloru sa lekko nieczytelne.
