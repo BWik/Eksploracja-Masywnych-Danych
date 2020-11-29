@@ -1,0 +1,12 @@
+base
+lattice
+ggplot2
+caret
+MASS
+memisc
+corrplot
+ggridges
+viridisLite
+viridis
+dplyr
+ggpubr

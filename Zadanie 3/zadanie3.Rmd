@@ -1,0 +1,130 @@
+---
+title: "Zadanie 3"
+author: "Wiktor Borowik, Michal Rasinski"
+date: "26 11 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(modeldata)
+library(caret)
+library(descr, quietly = TRUE)
+library(class)
+library(klaR) #bayes
+data("mlc_churn")
+churnData <- data.frame(mlc_churn)
+```
+
+Poniżej znajduje sie podsumowanie zmiennych w zbiorze danych:
+
+```{r churnData}
+str(churnData)
+```
+
+Usunicie trzech zmiennych, które nie nadaja sie do klasyfikacji:
+
+``` {r churnTrain}
+churnTrain <- churnData[,!names(churnData) %in% c("state", "area_code", "account_length")]
+```
+
+Poniżej zmieniamy klasy dwóch zmiennych:
+
+``` {r changeClasses}
+levels(churnTrain$international_plan) <- list("0" ="no", "1"="yes")
+levels(churnTrain$voice_mail_plan) <- list("0" ="no", "1"="yes")
+str(churnTrain)
+```
+
+
+Dzielenie zestawu danych na dwa zbiory: zbior treningowy i zbior testowy (odpowiednio 75% i 25%):
+
+``` {r setDivision}
+set.seed(23)
+data_division <-
+    createDataPartition(
+        y = churnTrain$churn,
+        p = .75,
+        list = FALSE)
+
+trainset <- churnTrain[ data_division,]
+testset <- churnTrain[-data_division,]
+```
+
+Sprawdzenie wymiarów podzielonych danych:
+``` {r checkdim}
+pander::pander(dim(trainset))
+pander::pander(dim(testset))
+```
+
+Funkcja fitConrtol:
+
+``` {r fitcontrol}
+fitControl <- trainControl(method = "repeatedcv",
+                           number = 10,
+                           repeats = 10,
+                           classProbs = TRUE,
+                           summaryFunction = twoClassSummary)
+```
+
+Klasyfikator 1. - KNN (K- nearest neighbours):
+
+``` {r knn, cache=TRUE}
+model_knn <- train(churn ~ ., data = trainset, 
+                 method = "knn", 
+                 trControl = fitControl,
+                 metric = "ROC")
+model_knn
+```
+
+Predyckja modelu knn:
+
+``` {r predictknn}
+rfClasses <- predict(model_knn, newdata = testset)
+confusionMatrix(data = rfClasses, testset$churn)
+```
+
+Klasyfikator 2. - SVM (Supporting Vector Machine):
+
+``` {r SVMfitmodel, cache=TRUE}
+set.seed(825)
+svmFit <- train(churn ~ ., data = trainset, 
+                 method = "svmRadial", 
+                 trControl = fitControl, 
+                 preProc = c("center", "scale"),
+                 tuneLength = 2,
+                 metric = "ROC")
+svmFit 
+```
+
+Predyckja modelu SVM:
+
+``` {r predisvm}
+rfClasses <- predict(svmFit, newdata = testset)
+confusionMatrix(data = rfClasses, testset$churn)
+```
+
+Porównanie parametrów obu klasyfikatorów przedstawiono na poniższym wykresie porównawczym:
+
+``` {r przygotowanie wykresu, echo=FALSE}
+resamps <- resamples(list(KNN = model_knn,
+                          SVM = svmFit))
+theme1 <- trellis.par.get()
+theme1$plot.symbol$col = rgb(.2, .2, .2, .4)
+theme1$plot.symbol$pch = 16
+theme1$plot.line$col = rgb(1, 0, 0, .7)
+theme1$plot.line$lwd <- 2
+```
+
+``` {r wykres}
+trellis.par.set(theme1)
+bwplot(resamps, layout = c(3, 1))
+```
+
+# Podsumowanie
+
+Okazalo sie, że lepsze wyniki klasyfikacji uzyskalismy stosujac klasyfikator SVM, aniżeli klasyfikatorem KNN. Klasyfikator SVM idelanie nadaje sie do zbiorów danych z dwuwartosciowa klasa decyzyjna, poniewaz dzieli hiperplaszczyzne na dwie czescie - każda dla odpowiedniej klasy. 
+
+W fazie testowania przebadalismy kilka roznych wartosci parametru k w klasyfikatorze KNN. Jedna z lepszych wartosci otrzymalismy dla k rownego 9. Taka sama informacja plynie z podsumowania klasyfikatora. Analogicznie parametrem, ktory sprawdzalismy w przypadku klasyfikatora SVM byl parametr C. Szczegolowosc badania ustawialismy za pomoca parametru 'tuneLength' w funkcji 'train'. Przebadalismy 8 roznych wartosci od 0.25 do 8 i okazalo sie, że najlepsze wyniki klasyfikatora otrzymalismy dla wartoscie 0.5.
+
+Wstepne przetworzenie zbioru danych na pewno poprawiloby osiagi obydwoch klasyfikatorow. Stworzone klasyfikatory dzialaly na bardzo duzej liczbie wymiarow, z czego wiekszosc bylaby prawdopodobnie zbedna. Usunelismy jedynie 3 zmienne ze zbioru danych, ktore w zaden sposob nie pomoglyby zaklasyfikowac danych. Aby usprawnic proces uczenia i finalne osiagi wybranych przez nas klasyfikatorow dokonalibysmy redukcji wymiarow.
